@@ -39,25 +39,15 @@ void loop() {
   FastLED.setBrightness(brightness); // Устанавливаем яркость
   
   if (motionValue1 == HIGH && !motionDetected) { // 1 датчик
-    motionDetected = true;
-    
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::White; // Включаем светодиоды поочередно
-      FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между выключением светодиодов
-    }
+    motionDetected = true;    
+    onBeginToFinish();
     
     while (motionValue2 != HIGH) {
-      Serial.println("Движение обнаружено на первом датчике!");
-      
-      motionValue2 = digitalRead(motionSensorPin2); // Проверяем срабатывание второго датчика
+      Serial.println("Движение обнаружено на первом датчике!");      
+      motionValue2 = digitalRead(motionSensorPin2); // Проверяем срабатывание ВТОРОГО датчика
     }
-    
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = CRGB::Black; // Гасим светодиоды поочередно
-      FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между выключением светодиодов
-    }
+
+    offBeginToFinish();
     
     motionDetected = false; // Сбрасываем флаг обнаружения движения
     FastLED.clear(); // Очищаем ленту
@@ -65,28 +55,50 @@ void loop() {
   }
 
   if (motionValue2 == HIGH && !motionDetected) { // 2 датчик
-    motionDetected = true;
-    
-    for (int i = NUM_LEDS; i >= 0; i--) {
-      leds[i] = CRGB::Red; // Включаем светодиоды поочередно
-      FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между включением светодиодов
-    }
+    motionDetected = true;    
+    onFinishToBegin();
     
     while (motionValue1 != HIGH) {
-      Serial.println("Движение обнаружено на втором датчике!");
-      
-      motionValue1 = digitalRead(motionSensorPin1); // Проверяем срабатывание второго датчика
+      Serial.println("Движение обнаружено на втором датчике!");      
+      motionValue1 = digitalRead(motionSensorPin1); // Проверяем срабатывание ПЕРВОГО датчика
     }
     
-    for (int i = NUM_LEDS; i >= 0; i--) {
-      leds[i] = CRGB::Black; // Гасим светодиоды поочередно
-      FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между выключением светодиодов
-    }
+    offFinishToBegin();
     
     motionDetected = false; // Сбрасываем флаг обнаружения движения
     FastLED.clear(); // Очищаем ленту
     FastLED.show(); // Отображаем изменения на ленте
+  }
+}
+
+void onBeginToFinish() { // ВКЛЮЧЕНИЕ светодиодов СНИЗУ ВВЕРХ
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::White; // Включаем светодиоды поочередно
+    FastLED.show(); // Отображаем изменения на ленте
+    delay(5); // Задержка между выключением светодиодов
+  }
+}
+
+void onFinishToBegin() {
+  for (int i = NUM_LEDS; i >= 0; i--) {
+    leds[i] = CRGB::Red; // Включаем светодиоды поочередно
+    FastLED.show(); // Отображаем изменения на ленте
+    delay(5); // Задержка между включением светодиодов
+  }
+}
+
+void offBeginToFinish() { // ВЫКЛЮЧЕНИЕ светодиодов СНИЗУ ВВЕРХ
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Black; // Гасим светодиоды поочередно
+    FastLED.show(); // Отображаем изменения на ленте
+    delay(5); // Задержка между выключением светодиодов
+  }
+}
+
+void offFinishToBegin() {
+  for (int i = NUM_LEDS; i >= 0; i--) {
+    leds[i] = CRGB::Black; // Гасим светодиоды поочередно
+    FastLED.show(); // Отображаем изменения на ленте
+    delay(5); // Задержка между выключением светодиодов
   }
 }
