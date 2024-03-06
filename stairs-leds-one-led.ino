@@ -4,8 +4,7 @@
 #define DATA_PIN 12 // Пин, к которому подключена адресная лента
 
 int NUM_STEPS = 16;
-int LEDS_PER_STEP = NUM_LEDS / NUM_STEPS; 
-
+int LEDS_PER_STEP = NUM_LEDS / NUM_STEPS;
 
 CRGB leds[NUM_LEDS];
 
@@ -28,9 +27,13 @@ void setup() {
   
   Serial.begin(9600); // Инициализация последовательной связи
   FastLED.clear(); // Очищаем ленту
+
+  // Включаем первый и последний светодиод белым цветом при включении питания
+  leds[0] = CRGB::White;
+  leds[NUM_LEDS - 1] = CRGB::White;
+
   FastLED.show(); // Отображаем изменения на ленте
 }
-///////////////
 
 void loop() {
   int motionValue1 = digitalRead(motionSensorPin1); // Считываем значение с первого датчика движения
