@@ -29,8 +29,8 @@ void setup() {
   FastLED.clear(); // Очищаем ленту
 
   // Включаем первый и последний светодиод белым цветом при включении питания
-  leds[0] = CRGB::White;
-  leds[NUM_LEDS - 1] = CRGB::White;
+  // leds[0] = CRGB::White;
+  // leds[NUM_LEDS - 1] = CRGB::White;
 
   FastLED.show(); // Отображаем изменения на ленте
 }
@@ -42,7 +42,7 @@ void loop() {
   FastLED.setBrightness(brightness); // Устанавливаем яркость
   
   if (motionValue1 == HIGH && !motionDetected) { // 1 датчик
-    motionDetected = true;    
+    motionDetected = true;
     onBeginToFinish();
     
     while (motionValue2 != HIGH) {
@@ -58,11 +58,11 @@ void loop() {
   }
 
   if (motionValue2 == HIGH && !motionDetected) { // 2 датчик
-    motionDetected = true;    
+    motionDetected = true;
     onFinishToBegin();
     
     while (motionValue1 != HIGH) {
-      Serial.println("Движение обнаружено на втором датчике!");      
+      Serial.println("Движение обнаружено на втором датчике!");
       motionValue1 = digitalRead(motionSensorPin1); // Проверяем срабатывание ПЕРВОГО датчика
     }
     
@@ -82,7 +82,7 @@ void onBeginToFinish() { // ВКЛЮЧЕНИЕ светодиодов СНИЗУ
   }
 }
 
-void onFinishToBegin() {
+void onFinishToBegin() { // ВКЛЮЧЕНИЕ светодиодов СВЕРХУ ВНИЗ
   for (int i = NUM_LEDS; i >= 0; i--) {
     leds[i] = CRGB::Red; // Включаем светодиоды поочередно
     FastLED.show(); // Отображаем изменения на ленте
@@ -98,7 +98,7 @@ void offBeginToFinish() { // ВЫКЛЮЧЕНИЕ светодиодов СНИ�
   }
 }
 
-void offFinishToBegin() {
+void offFinishToBegin() { // ВЫКЛЮЧЕНИЕ светодиодов СВЕРХУ ВНИЗ
   for (int i = NUM_LEDS; i >= 0; i--) {
     leds[i] = CRGB::Black; // Гасим светодиоды поочередно
     FastLED.show(); // Отображаем изменения на ленте
