@@ -1,10 +1,11 @@
 #include <FastLED.h>
 
-#define NUM_LEDS 256 // Количество светодиодов в адресной ленте
 #define DATA_PIN 12 // Пин, к которому подключена адресная лента
 
-int NUM_STEPS = 16;
-int LEDS_PER_STEP = NUM_LEDS / NUM_STEPS;
+#define NUM_LEDS 256 // Количество светодиодов в адресной ленте
+int NUM_STEPS = 16; // количество супеней
+int LEDS_PER_STEP = NUM_LEDS / NUM_STEPS; // количество светодиодов в одной ступени
+#define FADE_DELAY 50 // Задержка между изменениями яркости (миллисекунды)
 
 CRGB leds[NUM_LEDS];
 
@@ -14,10 +15,41 @@ int motionSensorPin2 = 3; // Пин для второго датчика дви�
 int brightness = 10; // Начальная яркость (от 0 до 255)
 CRGB color = CRGB::Blue; // Начальный цвет
 
-bool motionDetected_1 = false; // Флаг обнаружения движения
-bool motionDetected_2 = false; // Флаг обнаружения движения
+bool firstMove = false;
+bool downSensor = false;
+bool topSensor = false;
 
-bool motionDetected = false; // Флаг обнаружения движения
+unsigned long startTime;
+unsigned long previousMillis = 0;
+const long interval = 1000; // интервал для измерения температуры (1 секунда)
+int time = 2;
+
+int r = 2;
+
+int timeDelay = 400;
+
+ ///
+  void onfirstLeds(){
+    // if(r == 1) {
+    //   leds[0] = CRGB::White;
+    //   leds[NUM_LEDS - 1] = CRGB::White;
+    // }
+
+    // if(r == 2) {
+      for (int i = 0; i < NUM_STEPS; i++) {
+        leds[i] = CRGB::White;
+        FastLED.show(); // Отображаем изменения на ленте
+        delay(0); // Задержка между выключением светодиодов
+      }
+
+      for (int i = NUM_LEDS - NUM_STEPS; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::White;
+        FastLED.show(); // Отображаем изменения на ленте
+        delay(0); // Задержка между выключением светодиодов
+      }
+    // }
+  }
+  ///
 
 void setup() {
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);
@@ -29,130 +61,169 @@ void setup() {
   FastLED.clear(); // Очищаем ленту
 
   // Включаем первый и последний светодиод белым цветом при включении питания
-  // leds[0] = CRGB::White;
-  // leds[NUM_LEDS - 1] = CRGB::White;
+ 
+  // onfirstLeds();
 
   FastLED.show(); // Отображаем изменения на ленте
+  startTime = millis(); // сохраняем время старта
 }
 
 void loop() {
+  unsigned long currentMillis = millis();
+
   int motionValue1 = digitalRead(motionSensorPin1); // Считываем значение с первого датчика движения
   int motionValue2 = digitalRead(motionSensorPin2); // Считываем значение со второго датчика движения
 
   FastLED.setBrightness(brightness); // Устанавливаем яркость
-  
-  // if (motionValue1 == HIGH && !motionDetected) { // 1 датчик
-  //   motionDetected = true;
-  //   onBeginToFinish();
-    
-  //   while (motionValue2 != HIGH) {
-  //     Serial.println("Движение обнаружено на первом датчике!");      
-  //     motionValue2 = digitalRead(motionSensorPin2); // Проверяем срабатывание ВТОРОГО датчика
-  //   }
 
-  //   offBeginToFinish();
-    
-  //   motionDetected = false; // Сбрасываем флаг обнаружения движения
-  //   FastLED.clear(); // Очищаем ленту
-  //   FastLED.show(); // Отображаем изменения на ленте
-  // }
+  // идем наверх в первый раз 
+  if (motionValue1 == HIGH && !firstMove && !downSensor && !topSensor) { // 1 датчик включаем снизу вверх
+    // Serial.println("первый раз пошли наверх");
+    onLightToUp();
+    firstMove = true;
+    downSensor = true;
+    topSensor = false;  
+  }
 
-  // if (motionValue2 == HIGH && !motionDetected) { // 2 датчик
-  //   motionDetected = true;
-  //   onFinishToBegin();
-    
-  //   while (motionValue1 != HIGH) {
-  //     Serial.println("Движение обнаружено на втором датчике!");
-  //     motionValue1 = digitalRead(motionSensorPin1); // Проверяем срабатывание ПЕРВОГО датчика
-  //   }
-    
-  //   offFinishToBegin();
-    
-  //   motionDetected = false; // Сбрасываем флаг обнаружения движения
-  //   FastLED.clear(); // Очищаем ленту
-  //   FastLED.show(); // Отображаем изменения на ленте
-  // }
+  // идем вниз в первый раз
+  if (motionValue2 == HIGH && !firstMove && !downSensor && !topSensor) { // 2 датчик, включаем сверху вниз
+    // Serial.println("первый раз пошли вниз");
+    onLightToDown();
+    firstMove = true;
+    topSensor = true;
+    downSensor = false;  
+  }
 
-  // if (motionValue1 == HIGH && !motionDetected) { // 1 датчик
-  // for (int i = 0; i < NUM_LEDS; i++) { // Включаем светодиоды СНИЗУ ВВЕРХ
-  //     leds[i] = CRGB::White;
-  //     FastLED.show(); // Отображаем изменения на ленте
-  //     delay(5); // Задержка между выключением светодиодов
-  //   }
-  // }
+  // поднимаемся наверх в первый раз
+  if (motionValue2 == HIGH && downSensor) { // 2 датчик, включаем сверху вниз
+    // Serial.println("первый раз поднимаемся");
+    offLightToUp();
+    downSensor = false;
+    topSensor = false;
+    time = 2;
+  }
 
-  // if (motionValue2 == HIGH && !motionDetected) { // 2 датчик
-  //   for (int i = NUM_LEDS; i >= 0; i--) { // Включаем светодиоды СВЕРХУ ВНИЗ
-  //       leds[i] = CRGB::Red;
-  //       FastLED.show(); // Отображаем изменения на ленте
-  //       delay(5); // Задержка между включением светодиодов
-  //     }
-  // }
+  // спускаемся вниз в первый раз
+  if (motionValue1 == HIGH && topSensor) { // 1 датчик, включаем сверху вниз
+    // Serial.println("первый раз спускаемся");
+    offLightToDown();
+    topSensor = false;
+    downSensor = false;
+    time = 2;
+  }
 
-// КОД Галии начало
-  if ((motionValue1 == HIGH || motionValue2 == HIGH) &&!motionDetected) {
-    motionDetected = true;
-    int nonActiveSensor = motionValue1 == LOW ? motionSensorPin1 : motionSensorPin2;
-    int sensorWhichActivated = nonActiveSensor == motionSensorPin2 ? motionSensorPin1 : motionSensorPin2;
-    int sensorWhichDeactived = 0;
-    bool down = false;
-    onLight(sensorWhichActivated);
-    Serial.print("Движение обнаружено на датчике! - ");
-    Serial.println(sensorWhichActivated);
-    
-    while(true) {
-      if (digitalRead(nonActiveSensor) == HIGH && (sensorWhichDeactived = nonActiveSensor)
-      || down && digitalRead(sensorWhichActivated) == HIGH && (sensorWhichDeactived = sensorWhichActivated)) {
-        break;
-      }
-      
-      Serial.println("while");
-      if (!down && digitalRead(sensorWhichActivated) == LOW) {
-        down = true;
+  if (currentMillis - previousMillis >= interval) { // 1 сек, работа в режиме ТЕМПЕРАТУРА
+      previousMillis = currentMillis;
+
+    if (firstMove && (!topSensor && !downSensor)) {
+      if (time > 0) {
+        time = time - 1;
+        // Serial.println(time);
+      } else {
+        // Serial.println("будет сначала");
+        firstMove = false;
+        topSensor = false;
+        downSensor = false;
       }
     }
-
-    Serial.println("Выключить свет!");
-    offLight(sensorWhichDeactived);
-    motionDetected = false; // Сбрасываем флаг обнаружения движенияFastLED.clear(); // Очищаем ленту
-    FastLED.show(); // Отображаем изменения на ленте
-    delay(300);
   }
-// КОД Галии конец
+  onfirstLeds();
 }
 
-void onLight(int sensor) { // ВКЛЮЧЕНИЕ светодиодов СНИЗУ ВВЕРХ
-  bool directionUp = sensor == 2;
-  if (directionUp) {
-    for (int i = 0; i < NUM_LEDS; i++) { // Включаем светодиоды СНИЗУ ВВЕРХ
+//// Функции
+
+void onLightToUp() { // ВКЛЮЧЕНИЕ светодиодов СНИЗУ ВВЕРХ
+  if(r == 1) {
+    for (int i = 0; i < NUM_LEDS; i++) {
       leds[i] = CRGB::White;
       FastLED.show(); // Отображаем изменения на ленте
       delay(5); // Задержка между выключением светодиодов
     }
   }
-  else {
-    for (int i = NUM_LEDS; i >= 0; i--) { // Включаем светодиоды СВЕРХУ ВНИЗ
-      leds[i] = CRGB::Red;
-      FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между включением светодиодов
+
+  if(r == 2) { // включение снизу вверх по одной ступеньке
+    for (int i = 0; i < NUM_STEPS; i++) {
+      int startLed = i * LEDS_PER_STEP;
+      int endLed = startLed + LEDS_PER_STEP;
+      
+      for (int j = startLed; j < endLed; j++) {
+        leds[j] = CRGB::White;
+      }
+      
+      FastLED.show();
+      delay(timeDelay);
     }
   }
 }
 
-void offLight(int sensor) {
-  bool directionUp = sensor == 3; // Выбор направления выключения
-  if (directionUp) {
-    for (int i = 0;  i < NUM_LEDS; i--) { // Гасим светодиоды СНИЗУ ВВЕРХ
-      leds[i] = CRGB::Black;
+void onLightToDown() { // ВКЛЮЧЕНИЕ светодиодов СВЕРХУ ВНИЗ
+  if(r == 1) {
+    for (int i = NUM_LEDS; i >= 0; i--) {
+      leds[i] = CRGB::White;
       FastLED.show(); // Отображаем изменения на ленте
-      delay(5); // Задержка между выключением светодиодов
+      delay(5); // Задержка между включением светодиодов
+    }
+  }
+
+  if(r == 2) { // включаем по одной ступеньке сверху вниз
+    for (int i = NUM_STEPS - 1; i >= 0; i--) {
+      int startLed = i * LEDS_PER_STEP;
+      int endLed = startLed + LEDS_PER_STEP;
+      
+      for (int j = startLed; j < endLed; j++) {
+        leds[j] = CRGB::White; // Зажигаем все светодиоды в ступени
+      }
+      
+      FastLED.show();
+      delay(timeDelay); // Задержка перед переходом к следующей ступени
     }    
   }
-  else {
-    for (int i = NUM_LEDS; i >= 0; i--) { // Гасим светодиоды СВЕРХУ ВНИЗ
+}
+
+void offLightToUp() { // ВЫКЛЮЧЕНИЕ светодиодов СНИЗУ ВВЕРХ
+  if(r == 1) {
+    for (int i = 0;  i < NUM_LEDS; i++) {
       leds[i] = CRGB::Black;
       FastLED.show(); // Отображаем изменения на ленте
       delay(5); // Задержка между выключением светодиодов
     }
+  }
+
+  if(r == 2) { // вЫключение снизу вверх по одной ступеньке
+    for (int i = 0; i < NUM_STEPS; i++) {
+      int startLed = i * LEDS_PER_STEP;
+      int endLed = startLed + LEDS_PER_STEP;
+      
+      for (int j = startLed; j < endLed; j++) {
+        leds[j] = CRGB::Black;
+      }
+      
+      FastLED.show();
+      delay(timeDelay);
+    }    
+  }
+}
+
+void offLightToDown() { // ВЫКЛЮЧЕНИЕ светодиодов  СВЕРХУ в ВНИЗ
+  if(r == 1) {
+    for (int i = NUM_LEDS; i >= 0; i--) {
+      leds[i] = CRGB::Black;
+      FastLED.show(); // Отображаем изменения на ленте
+      delay(5); // Задержка между выключением светодиодов
+    }
+  }
+
+  if(r == 2) {
+    for (int i = NUM_STEPS - 1; i >= 0; i--) {
+      int startLed = i * LEDS_PER_STEP;
+      int endLed = startLed + LEDS_PER_STEP;
+      
+      for (int j = startLed; j < endLed; j++) {
+        leds[j] = CRGB::Black; // Зажигаем все светодиоды в ступени
+      }
+      
+      FastLED.show();
+      delay(timeDelay); // Задержка перед переходом к следующей ступени
+    }    
   }
 }
